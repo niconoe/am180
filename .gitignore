@@ -1,0 +1,28 @@
+# Python
+.venv/
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+build/
+dist/
+
+# Node / frontend
+node_modules/
+frontend/dist/
+frontend/.vite/
+
+# Editors / OS
+.idea/
+*.iml
+.vscode/
+.DS_Store
+
+# Local environment
+.env
+.env.local
+
+# Brainstorming session files (visual companion mockups)
+.superpowers/
