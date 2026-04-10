@@ -14,7 +14,9 @@
     "lint:eslint": "eslint . --fix --cache"
   },
   "dependencies": {
+    "@primeuix/themes": "^2.0.3",
     "pinia": "^3.0.4",
+    "primevue": "^4.5.5",
     "vue": "^3.5.31"
   },
   "devDependencies": {
