@@ -10,7 +10,7 @@ from dataclasses import dataclass
 from PIL import Image
 from pydantic import BaseModel
 
-from am180.generators import hello
+from am180.generators import flow_field, hello
 from am180.schemas import ParamSpec
 
 
@@ -43,6 +43,14 @@ class Generator:
 
 
 GENERATORS: dict[str, Generator] = {
+    "flow_field": Generator(
+        id="flow_field",
+        name="Flow Field",
+        description="Particles drifting through a noise-driven vector field",
+        params_model=flow_field.FlowFieldParams,
+        param_schema=flow_field.PARAM_SCHEMA,
+        render=flow_field.render,
+    ),
     "hello": Generator(
         id="hello",
         name="Hello",

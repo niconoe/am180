@@ -111,3 +111,48 @@ def test_health_still_responds() -> None:
     response = client.get("/health")
     assert response.status_code == 200
     assert response.json() == {"status": "ok"}
+
+
+# --- Flow field integration ---
+
+def test_flow_field_preview() -> None:
+    """The flow field generator must be accessible through the API."""
+    response = client.post(
+        "/api/preview?size=64",
+        json={
+            "generator": "flow_field",
+            "params": {
+                "noise_scale": 3.0,
+                "angle_range": 1.0,
+                "particle_density": 0.001,
+                "step_size": 0.002,
+                "max_steps": 50,
+                "line_width": 0.0015,
+                "background": "#0a0a14",
+                "palette": "warm",
+            },
+            "seed": 42,
+        },
+    )
+    assert response.status_code == 200
+    assert response.headers["content-type"] == "image/png"
+    img = Image.open(io.BytesIO(response.content))
+    assert img.size == (64, 64)
+
+
+def test_flow_field_listed_in_generators() -> None:
+    response = client.get("/api/generators")
+    data = response.json()
+    ids = [g["id"] for g in data]
+    assert "flow_field" in ids
+
+
+def test_flow_field_schema_endpoint() -> None:
+    response = client.get("/api/generators/flow_field/schema")
+    assert response.status_code == 200
+    data = response.json()
+    assert data["id"] == "flow_field"
+    param_ids = [p["id"] for p in data["params"]]
+    assert "noise_scale" in param_ids
+    assert "palette" in param_ids
+    assert len(data["params"]) == 8
