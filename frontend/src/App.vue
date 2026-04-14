@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { onMounted, watch } from 'vue'
 import { useGenartStore } from '@/stores/genart'
+import Button from 'primevue/button'
 import GeneratorPicker from '@/components/GeneratorPicker.vue'
 import ParamForm from '@/components/ParamForm.vue'
 import SeedControls from '@/components/SeedControls.vue'
@@ -47,6 +48,14 @@ watch(
         :schema="store.schema"
         :modelValue="store.params"
         @update:modelValue="store.params = $event"
+      />
+
+      <Button
+        label="Randomize all"
+        severity="secondary"
+        size="small"
+        @click="store.randomizeAll()"
+        style="width: 100%"
       />
 
       <SeedControls

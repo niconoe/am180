@@ -55,6 +55,25 @@ export const useGenartStore = defineStore('genart', () => {
     params.value = { ...params.value, [id]: value }
   }
 
+  function randomizeAll() {
+    const randomized: Record<string, number | string> = {}
+    for (const spec of schema.value) {
+      if ((spec.type === 'float' || spec.type === 'int') && spec.min !== undefined && spec.max !== undefined) {
+        const val = spec.min + Math.random() * (spec.max - spec.min)
+        randomized[spec.id] = spec.type === 'int' ? Math.round(val) : val
+      } else if (spec.type === 'select' && spec.options && spec.options.length > 0) {
+        randomized[spec.id] = spec.options[Math.floor(Math.random() * spec.options.length)]!.value
+      } else if (spec.type === 'color') {
+        const hex = Math.floor(Math.random() * 0xffffff).toString(16).padStart(6, '0')
+        randomized[spec.id] = `#${hex}`
+      } else if (spec.default !== undefined) {
+        randomized[spec.id] = spec.default
+      }
+    }
+    params.value = randomized
+    seed.value = Math.floor(Math.random() * 2 ** 32)
+  }
+
   function randomizeSeed() {
     seed.value = Math.floor(Math.random() * 2 ** 32)
   }
@@ -134,6 +153,7 @@ export const useGenartStore = defineStore('genart', () => {
     loadGenerators,
     selectGenerator,
     updateParam,
+    randomizeAll,
     randomizeSeed,
     requestPreview,
     exportFullRes,
