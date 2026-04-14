@@ -308,8 +308,11 @@ def render(params: FlowFieldParams, seed: int, size: int) -> Image.Image:
     # 1-2. Build angle field from gradient noise
     angles = _build_angle_field(params, rng)
 
-    # 3. Seed particles in normalized [0, 1] space
-    n_particles = max(1, round(params.particle_density * size * size))
+    # 3. Seed particles in normalized [0, 1] space.
+    # Particle count is based on a fixed reference size so the composition
+    # is identical at any output resolution (preview and export match).
+    _REFERENCE_SIZE = 512
+    n_particles = max(1, round(params.particle_density * _REFERENCE_SIZE * _REFERENCE_SIZE))
     start = rng.uniform(0, 1, (n_particles, 2))
 
     # 4. March particles through the angle field

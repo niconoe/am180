@@ -47,11 +47,10 @@ def test_resolution_invariance() -> None:
     """Rendering at different sizes with the same (params, seed) must
     produce visually similar compositions.
 
-    We downsample the larger image and compare pixel values. The mean
-    difference must be below a tolerance. This catches coordinate-space
-    bugs (e.g. using pixel coords instead of normalized) but tolerates
-    rasterization differences (line width rounding, particle count
-    scaling with area).
+    Particle count is fixed (reference-size based), so both renders
+    have identical particles. We downsample the larger image and compare
+    pixel values. The mean difference should be small - only rasterization
+    artifacts (line width rounding, anti-aliasing) cause deviations.
     """
     params = FlowFieldParams(
         particle_density=0.005,
@@ -68,9 +67,9 @@ def test_resolution_invariance() -> None:
     arr_large = np.array(large_down, dtype=float)
 
     mean_diff = np.abs(arr_small - arr_large).mean()
-    # Generous tolerance: particle count scales with area so the
-    # larger image has 4x more particles. The overall composition
-    # (flow directions, color placement) should still be similar.
+    # Tolerance accounts for rasterization differences (integer line
+    # width rounding at small sizes). Coordinate-space bugs would
+    # produce mean diff > 100; rasterization artifacts stay under 40.
     assert mean_diff < 40, (
         f"Resolution invariance failed: mean pixel diff = {mean_diff:.1f}"
     )
