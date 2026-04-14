@@ -76,7 +76,7 @@ export const useGenartStore = defineStore('genart', () => {
           params: params.value,
           seed: seed.value,
         },
-        512,
+        1024,
         abortController.signal,
       )
       // Revoke old object URL to prevent memory leak

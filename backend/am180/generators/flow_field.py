@@ -102,6 +102,11 @@ PARAM_SCHEMA: list[ParamSpec] = [
 # of output image size - chosen to give smooth interpolation.
 _NOISE_GRID = 256
 
+# Supersampling factor for antialiasing. Render at this multiple of the
+# requested size, then downsample with Lanczos. 2 gives good quality
+# without excessive cost.
+_SUPERSAMPLE = 2
+
 
 def _gradient_noise(
     xs: np.ndarray, ys: np.ndarray, rng: np.random.Generator
@@ -318,13 +323,19 @@ def render(params: FlowFieldParams, seed: int, size: int) -> Image.Image:
     # 4. March particles through the angle field
     trail = _march_particles(start, angles, params.step_size, params.max_steps)
 
-    # 5-6. Rasterize trails with palette colors
+    # 5-6. Rasterize trails with palette colors.
+    # Render at _SUPERSAMPLE * size for antialiasing, then downsample.
+    render_size = size * _SUPERSAMPLE
     palette = PALETTES.get(params.palette, PALETTES["warm"])
     palette_rgb = [hex_to_rgb(c) for c in palette]
     colors = [palette_rgb[i % len(palette_rgb)] for i in range(n_particles)]
-    line_px = max(1, round(params.line_width * size))
+    line_px = max(1, round(params.line_width * render_size))
 
-    img = Image.new("RGB", (size, size), params.background)
+    img = Image.new("RGB", (render_size, render_size), params.background)
     _draw_trails(img, trail, colors, line_px)
+
+    # Downsample to requested size for smooth antialiased output
+    if _SUPERSAMPLE > 1:
+        img = img.resize((size, size), Image.Resampling.LANCZOS)
 
     return img
