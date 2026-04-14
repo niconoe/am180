@@ -15,6 +15,33 @@ const emit = defineEmits<{
   'update:modelValue': [value: number | string]
 }>()
 
+// PrimeVue Slider breaks with very small float ranges (e.g. 0.0001-0.01).
+// Workaround: map the slider to integer steps (0..N) and convert back to the
+// real float value. The InputNumber keeps the original range for fine control.
+const sliderSteps = computed(() => {
+  if (props.spec.min !== undefined && props.spec.max !== undefined && props.spec.step) {
+    return Math.round((props.spec.max - props.spec.min) / props.spec.step)
+  }
+  return 100
+})
+
+const sliderIntValue = computed({
+  get: () => {
+    if (props.spec.min !== undefined && props.spec.step) {
+      return Math.round((Number(props.modelValue) - props.spec.min) / props.spec.step)
+    }
+    return Number(props.modelValue)
+  },
+  set: (v: number | number[]) => {
+    const raw = Array.isArray(v) ? (v[0] ?? 0) : v
+    if (props.spec.min !== undefined && props.spec.step) {
+      emit('update:modelValue', props.spec.min + raw * props.spec.step)
+    } else {
+      emit('update:modelValue', raw)
+    }
+  },
+})
+
 // PrimeVue ColorPicker uses hex WITHOUT '#', our store uses WITH '#'
 const colorValue = computed({
   get: () => String(props.modelValue).replace('#', ''),
@@ -29,11 +56,10 @@ const colorValue = computed({
     <template v-if="spec.type === 'float' || spec.type === 'int'">
       <div style="display: flex; align-items: center; gap: 0.75rem">
         <Slider
-          :modelValue="Number(modelValue)"
-          @update:modelValue="emit('update:modelValue', Array.isArray($event) ? ($event[0] ?? 0) : $event)"
-          :min="spec.min"
-          :max="spec.max"
-          :step="spec.step"
+          v-model="sliderIntValue"
+          :min="0"
+          :max="sliderSteps"
+          :step="1"
           style="flex: 1"
         />
         <InputNumber
