@@ -14,6 +14,8 @@ import {
   fetchPreview,
   fetchRender,
 } from '@/api/client'
+import { usePalettesLibrary } from '@/stores/palettesLibrary'
+import { formatPaletteString, resizeColors } from '@/utils/palette'
 
 export const useGenartStore = defineStore('genart', () => {
   // --- State ---
@@ -41,10 +43,24 @@ export const useGenartStore = defineStore('genart', () => {
     selectedGeneratorId.value = id
     const genSchema = await fetchSchema(id)
     schema.value = genSchema.params
-    // Initialize params from schema defaults
+    const library = usePalettesLibrary()
     const defaults: Record<string, number | string> = {}
     for (const spec of genSchema.params) {
-      if (spec.default !== undefined) {
+      if (spec.type === 'palette') {
+        const size = spec.size ?? 5
+        const preset = library.findPreset(spec.default_preset) ?? library.presets[0]
+        if (!preset) {
+          console.warn('No presets available for palette param', spec.id)
+          continue
+        }
+        if (spec.default_preset && !library.findPreset(spec.default_preset)) {
+          console.warn(
+            'Unknown default_preset id, falling back to first preset:',
+            spec.default_preset,
+          )
+        }
+        defaults[spec.id] = formatPaletteString(resizeColors(preset.colors, size))
+      } else if (spec.default !== undefined) {
         defaults[spec.id] = spec.default
       }
     }
@@ -56,6 +72,7 @@ export const useGenartStore = defineStore('genart', () => {
   }
 
   function randomizeAll() {
+    const library = usePalettesLibrary()
     const randomized: Record<string, number | string> = {}
     for (const spec of schema.value) {
       if ((spec.type === 'float' || spec.type === 'int') && spec.min !== undefined && spec.max !== undefined) {
@@ -66,6 +83,13 @@ export const useGenartStore = defineStore('genart', () => {
       } else if (spec.type === 'color') {
         const hex = Math.floor(Math.random() * 0xffffff).toString(16).padStart(6, '0')
         randomized[spec.id] = `#${hex}`
+      } else if (spec.type === 'palette') {
+        const size = spec.size ?? 5
+        const presets = library.presets
+        if (presets.length > 0) {
+          const choice = presets[Math.floor(Math.random() * presets.length)]!
+          randomized[spec.id] = formatPaletteString(resizeColors(choice.colors, size))
+        }
       } else if (spec.default !== undefined) {
         randomized[spec.id] = spec.default
       }
