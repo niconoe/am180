@@ -5,13 +5,17 @@
 export interface ParamSpec {
   id: string
   label: string
-  type: 'float' | 'int' | 'color' | 'select'
+  type: 'float' | 'int' | 'color' | 'select' | 'palette'
   min?: number
   max?: number
   step?: number
   default?: number | string
   group?: string
   options?: { value: string; label: string }[]
+  /** Palette-only: number of color slots. */
+  size?: number
+  /** Palette-only: preset id resolved against the frontend library. */
+  default_preset?: string
 }
 
 /** Summary of a generator, from GET /api/generators. */
