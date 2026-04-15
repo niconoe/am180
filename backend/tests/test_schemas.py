@@ -76,3 +76,24 @@ def test_render_request() -> None:
     assert req.generator == "hello"
     assert req.seed == 42
     assert req.params["color"] == "#00ff00"
+
+
+def test_param_spec_palette() -> None:
+    spec = ParamSpec(
+        id="colors",
+        label="Palette",
+        type="palette",
+        size=5,
+        default_preset="warm",
+        group="render",
+    )
+    assert spec.type == "palette"
+    assert spec.size == 5
+    assert spec.default_preset == "warm"
+    assert spec.options is None
+
+
+def test_param_spec_palette_minimal() -> None:
+    spec = ParamSpec(id="p", label="P", type="palette")
+    assert spec.size is None
+    assert spec.default_preset is None

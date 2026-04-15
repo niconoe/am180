@@ -12,7 +12,7 @@ class ParamSpec(BaseModel):
     label : str
         Human-readable label shown in the frontend.
     type : str
-        One of "float", "int", "color", "select".
+        One of "float", "int", "color", "select", "palette".
     min : float or None
         Minimum value (for float/int sliders).
     max : float or None
@@ -25,6 +25,11 @@ class ParamSpec(BaseModel):
         Optional group name for visual grouping in the UI.
     options : list of dict or None
         For type="select": list of {"value": ..., "label": ...} dicts.
+    size : int or None
+        For type="palette": number of color slots in the palette.
+    default_preset : str or None
+        For type="palette": id of a frontend preset to use as initial
+        value. Resolved by the frontend against its preset library.
     """
 
     id: str
@@ -36,6 +41,8 @@ class ParamSpec(BaseModel):
     default: float | int | str | None = None
     group: str | None = None
     options: list[dict[str, str]] | None = None
+    size: int | None = None
+    default_preset: str | None = None
 
 
 class GeneratorInfo(BaseModel):
