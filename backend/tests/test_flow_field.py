@@ -75,9 +75,15 @@ def test_resolution_invariance() -> None:
     )
 
 
-def test_all_palettes_render() -> None:
-    """Every built-in palette must produce a valid image without errors."""
-    for palette_name in ("warm", "cool", "mono"):
-        params = FlowFieldParams(palette=palette_name)
+def test_various_color_palettes_render() -> None:
+    """Different color strings must produce valid images without errors."""
+    palettes = (
+        "#ff6b35,#f7931e,#fcbf49,#f77f00,#d62828",  # warm
+        "#4cc9f0,#4361ee,#3a0ca3,#7209b7,#560bad",  # cool
+        "#ffffff,#c0c0c0,#808080",                    # mono (fewer colors)
+        "#ff0000",                                     # single color
+    )
+    for colors in palettes:
+        params = FlowFieldParams(colors=colors)
         img = render(params, seed=1, size=32)
         assert img.size == (32, 32)

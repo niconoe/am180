@@ -129,7 +129,7 @@ def test_flow_field_preview() -> None:
                 "max_steps": 50,
                 "line_width": 0.0015,
                 "background": "#0a0a14",
-                "palette": "warm",
+                "colors": "#ff6b35,#f7931e,#fcbf49,#f77f00,#d62828",
             },
             "seed": 42,
         },
@@ -154,5 +154,5 @@ def test_flow_field_schema_endpoint() -> None:
     assert data["id"] == "flow_field"
     param_ids = [p["id"] for p in data["params"]]
     assert "noise_scale" in param_ids
-    assert "palette" in param_ids
+    assert "colors" in param_ids
     assert len(data["params"]) == 9

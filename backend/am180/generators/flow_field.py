@@ -13,7 +13,7 @@ import numpy as np
 from PIL import Image, ImageDraw
 from pydantic import BaseModel, Field
 
-from am180.rendering import PALETTES, hex_to_rgb
+from am180.rendering import hex_to_rgb
 from am180.schemas import ParamSpec
 
 
@@ -44,8 +44,10 @@ class FlowFieldParams(BaseModel):
         opacity to zero along its length.
     background : str
         Canvas background color as hex string.
-    palette : str
-        Name of the color palette for particle trails.
+    colors : str
+        Comma-separated hex colors for particle trails
+        (e.g. "#ff6b35,#f7931e,#fcbf49"). The frontend owns palette
+        definitions and sends the actual color values.
     """
 
     noise_scale: float = Field(3.0, ge=0.5, le=10.0)
@@ -56,7 +58,7 @@ class FlowFieldParams(BaseModel):
     line_width: float = Field(0.0015, ge=0.0005, le=0.02)
     trail_opacity: float = Field(0.6, ge=0.1, le=1.0)
     background: str = Field("#0a0a14")
-    palette: str = Field("warm")
+    colors: str = Field("#ff6b35,#f7931e,#fcbf49,#f77f00,#d62828")
 
 
 PARAM_SCHEMA: list[ParamSpec] = [
@@ -97,12 +99,13 @@ PARAM_SCHEMA: list[ParamSpec] = [
         default="#0a0a14", group="render",
     ),
     ParamSpec(
-        id="palette", label="Palette", type="select", default="warm",
+        id="colors", label="Palette", type="select",
+        default="#ff6b35,#f7931e,#fcbf49,#f77f00,#d62828",
         group="render",
         options=[
-            {"value": "warm", "label": "Warm"},
-            {"value": "cool", "label": "Cool"},
-            {"value": "mono", "label": "Mono"},
+            {"value": "#ff6b35,#f7931e,#fcbf49,#f77f00,#d62828", "label": "Warm"},
+            {"value": "#4cc9f0,#4361ee,#3a0ca3,#7209b7,#560bad", "label": "Cool"},
+            {"value": "#ffffff,#c0c0c0,#808080,#d0d0d0,#e8e8e8", "label": "Mono"},
         ],
     ),
 ]
@@ -382,8 +385,7 @@ def render(params: FlowFieldParams, seed: int, size: int) -> Image.Image:
     # 5-6. Rasterize trails with palette colors.
     # Render at _SUPERSAMPLE * size for antialiasing, then downsample.
     render_size = size * _SUPERSAMPLE
-    palette = PALETTES.get(params.palette, PALETTES["warm"])
-    palette_rgb = [hex_to_rgb(c) for c in palette]
+    palette_rgb = [hex_to_rgb(c.strip()) for c in params.colors.split(",")]
     colors = [palette_rgb[i % len(palette_rgb)] for i in range(n_particles)]
     line_px = max(1, round(params.line_width * render_size))
 
