@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, watch } from 'vue'
+import { onMounted, ref, watch } from 'vue'
 import { useGenartStore } from '@/stores/genart'
 import Button from 'primevue/button'
 import GeneratorPicker from '@/components/GeneratorPicker.vue'
@@ -7,8 +7,10 @@ import ParamForm from '@/components/ParamForm.vue'
 import SeedControls from '@/components/SeedControls.vue'
 import PreviewPane from '@/components/PreviewPane.vue'
 import ExportButton from '@/components/ExportButton.vue'
+import PaletteEditor from '@/components/PaletteEditor.vue'
 
 const store = useGenartStore()
+const paletteEditorOpen = ref(false)
 
 onMounted(() => {
   store.loadGenerators()
@@ -68,6 +70,14 @@ watch(
         :disabled="store.isRendering || !store.previewUrl"
         @export="store.exportFullRes()"
       />
+
+      <Button
+        label="Palette editor"
+        severity="secondary"
+        size="small"
+        @click="paletteEditorOpen = true"
+        style="width: 100%"
+      />
     </aside>
 
     <main class="main-content">
@@ -76,6 +86,8 @@ watch(
         :isRendering="store.isRendering"
       />
     </main>
+
+    <PaletteEditor v-model:visible="paletteEditorOpen" />
   </div>
 </template>
 

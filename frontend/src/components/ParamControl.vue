@@ -4,6 +4,7 @@ import Slider from 'primevue/slider'
 import InputNumber from 'primevue/inputnumber'
 import ColorPicker from 'primevue/colorpicker'
 import Select from 'primevue/select'
+import PaletteField from './PaletteField.vue'
 import { computed } from 'vue'
 
 const props = defineProps<{
@@ -88,6 +89,13 @@ const colorValue = computed({
       optionLabel="label"
       optionValue="value"
       style="width: 100%"
+    />
+
+    <PaletteField
+      v-else-if="spec.type === 'palette'"
+      :spec="spec"
+      :modelValue="String(modelValue)"
+      @update:modelValue="emit('update:modelValue', $event)"
     />
   </div>
 </template>
