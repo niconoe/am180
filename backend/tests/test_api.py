@@ -155,4 +155,4 @@ def test_flow_field_schema_endpoint() -> None:
     param_ids = [p["id"] for p in data["params"]]
     assert "noise_scale" in param_ids
     assert "palette" in param_ids
-    assert len(data["params"]) == 8
+    assert len(data["params"]) == 9

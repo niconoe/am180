@@ -38,6 +38,10 @@ class FlowFieldParams(BaseModel):
         Maximum number of steps per particle trail.
     line_width : float
         Trail thickness as a fraction of canvas size.
+    trail_opacity : float
+        How visible trails are at their brightest point (0.1 = ghostly,
+        1.0 = fully opaque). Each trail fades progressively from this
+        opacity to zero along its length.
     background : str
         Canvas background color as hex string.
     palette : str
@@ -49,7 +53,8 @@ class FlowFieldParams(BaseModel):
     particle_density: float = Field(0.001, ge=0.0001, le=0.01)
     step_size: float = Field(0.002, ge=0.0005, le=0.01)
     max_steps: int = Field(200, ge=10, le=1000)
-    line_width: float = Field(0.0015, ge=0.0005, le=0.005)
+    line_width: float = Field(0.0015, ge=0.0005, le=0.02)
+    trail_opacity: float = Field(0.6, ge=0.1, le=1.0)
     background: str = Field("#0a0a14")
     palette: str = Field("warm")
 
@@ -79,7 +84,12 @@ PARAM_SCHEMA: list[ParamSpec] = [
     ),
     ParamSpec(
         id="line_width", label="Line width", type="float",
-        min=0.0005, max=0.005, step=0.0001, default=0.0015,
+        min=0.0005, max=0.02, step=0.0001, default=0.0015,
+        group="render",
+    ),
+    ParamSpec(
+        id="trail_opacity", label="Trail opacity", type="float",
+        min=0.1, max=1.0, step=0.05, default=0.6,
         group="render",
     ),
     ParamSpec(
@@ -249,13 +259,26 @@ def _march_particles(
     return trail[:last_step + 1]
 
 
+_FADE_LEVELS = 20  # Discrete fade levels for progressive trail fade
+
+
 def _draw_trails(
     img: Image.Image,
     trail: np.ndarray,
     colors: list[tuple[int, int, int]],
+    bg_rgb: tuple[int, int, int],
     line_width: int,
+    trail_opacity: float,
 ) -> None:
-    """Draw particle trails as polylines onto the image.
+    """Draw particle trails with progressive fade onto the image.
+
+    Each trail fades from trail_opacity at the start to fully transparent
+    (background color) at the end. Transparency is faked by blending the
+    line color toward the background color, which works correctly against
+    a solid background and avoids expensive RGBA compositing.
+
+    Segments are batched into _FADE_LEVELS discrete opacity bands to
+    keep the number of draw calls manageable.
 
     Parameters
     ----------
@@ -265,26 +288,59 @@ def _draw_trails(
         Shape (steps, n_particles, 2), positions in [0, 1].
     colors : list of (r, g, b)
         One color per particle.
+    bg_rgb : tuple of int
+        Background color as (r, g, b) for blending.
     line_width : int
         Line width in pixels.
+    trail_opacity : float
+        Opacity at the start of each trail (0.1-1.0). Fades to 0 by end.
     """
     draw = ImageDraw.Draw(img)
     w = img.size[0]
     steps, n_particles, _ = trail.shape
 
     for i in range(n_particles):
+        # Collect all on-canvas points for this particle
         points: list[tuple[float, float]] = []
+        valid_steps: list[int] = []
         for s in range(steps):
             x, y = trail[s, i]
             if 0 <= x <= 1 and 0 <= y <= 1:
                 points.append((x * w, y * w))
+                valid_steps.append(s)
             else:
-                # Particle left the canvas - draw what we have and reset
-                if len(points) >= 2:
-                    draw.line(points, fill=colors[i], width=line_width)
-                points = []
-        if len(points) >= 2:
-            draw.line(points, fill=colors[i], width=line_width)
+                break  # Particle left - stop at canvas boundary
+
+        if len(points) < 2:
+            continue
+
+        n_pts = len(points)
+        cr, cg, cb = colors[i]
+        br, bg_g_val, bb = bg_rgb
+
+        # Split trail into _FADE_LEVELS batches, each drawn at a
+        # single blended color
+        batch_size = max(1, n_pts // _FADE_LEVELS)
+        for batch_start in range(0, n_pts - 1, batch_size):
+            batch_end = min(batch_start + batch_size + 1, n_pts)
+            if batch_end - batch_start < 2:
+                continue
+
+            # Fade factor: 1.0 at trail start, 0.0 at trail end
+            mid = (batch_start + batch_end) / 2
+            t = 1.0 - mid / n_pts
+            alpha = t * trail_opacity
+
+            # Blend line color toward background
+            r = int(cr * alpha + br * (1 - alpha))
+            g = int(cg * alpha + bg_g_val * (1 - alpha))
+            b = int(cb * alpha + bb * (1 - alpha))
+
+            draw.line(
+                points[batch_start:batch_end],
+                fill=(r, g, b),
+                width=line_width,
+            )
 
 
 def render(params: FlowFieldParams, seed: int, size: int) -> Image.Image:
@@ -331,8 +387,9 @@ def render(params: FlowFieldParams, seed: int, size: int) -> Image.Image:
     colors = [palette_rgb[i % len(palette_rgb)] for i in range(n_particles)]
     line_px = max(1, round(params.line_width * render_size))
 
+    bg_rgb = hex_to_rgb(params.background)
     img = Image.new("RGB", (render_size, render_size), params.background)
-    _draw_trails(img, trail, colors, line_px)
+    _draw_trails(img, trail, colors, bg_rgb, line_px, params.trail_opacity)
 
     # Downsample to requested size for smooth antialiased output
     if _SUPERSAMPLE > 1:
