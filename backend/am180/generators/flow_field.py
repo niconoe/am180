@@ -99,14 +99,8 @@ PARAM_SCHEMA: list[ParamSpec] = [
         default="#0a0a14", group="render",
     ),
     ParamSpec(
-        id="colors", label="Palette", type="select",
-        default="#ff6b35,#f7931e,#fcbf49,#f77f00,#d62828",
-        group="render",
-        options=[
-            {"value": "#ff6b35,#f7931e,#fcbf49,#f77f00,#d62828", "label": "Warm"},
-            {"value": "#4cc9f0,#4361ee,#3a0ca3,#7209b7,#560bad", "label": "Cool"},
-            {"value": "#ffffff,#c0c0c0,#808080,#d0d0d0,#e8e8e8", "label": "Mono"},
-        ],
+        id="colors", label="Palette", type="palette",
+        size=5, default_preset="warm", group="render",
     ),
 ]
 

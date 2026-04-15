@@ -87,3 +87,13 @@ def test_various_color_palettes_render() -> None:
         params = FlowFieldParams(colors=colors)
         img = render(params, seed=1, size=32)
         assert img.size == (32, 32)
+
+
+def test_param_schema_colors_is_palette() -> None:
+    """Flow field's `colors` param should be exposed as a palette."""
+    from am180.generators.flow_field import PARAM_SCHEMA
+    spec = next(p for p in PARAM_SCHEMA if p.id == "colors")
+    assert spec.type == "palette"
+    assert spec.size == 5
+    assert spec.default_preset == "warm"
+    assert spec.options is None
