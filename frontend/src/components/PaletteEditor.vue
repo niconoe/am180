@@ -1,100 +1,116 @@
 <script setup lang="ts">
 import Dialog from 'primevue/dialog'
 import ColorPicker from 'primevue/colorpicker'
+import InputText from 'primevue/inputtext'
 import Button from 'primevue/button'
-import { computed, watch } from 'vue'
-import { usePaletteEditor } from '@/composables/usePaletteEditor'
+import { computed, ref, watch } from 'vue'
 import { usePalettesLibrary } from '@/stores/palettesLibrary'
-import { formatPaletteString } from '@/utils/palette'
-import type { Preset } from '@/types/palette'
-
-const EDITOR_SIZE = 5
-
-const props = defineProps<{ visible: boolean }>()
-
-const emit = defineEmits<{ 'update:visible': [value: boolean] }>()
+import { normalizeHex } from '@/utils/palette'
+import type { HexColor } from '@/types/palette'
 
 const library = usePalettesLibrary()
-const initialValue = computed(() => {
-  const first = library.presets[0]
-  return first ? formatPaletteString(first.colors) : ''
-})
 
-const editor = usePaletteEditor(initialValue.value, EDITOR_SIZE)
-let valueAtOpen = editor.toCommaString()
-
-watch(
-  () => props.visible,
-  (now, prev) => {
-    if (now && !prev) {
-      valueAtOpen = editor.toCommaString()
-    }
-    if (!now && prev) {
-      const current = editor.toCommaString()
-      if (current !== valueAtOpen) {
-        library.addRecent({
-          colors: editor.slots.value.slice(),
-          createdAt: Date.now(),
-        })
-      }
-    }
-  },
+const palette = computed(() =>
+  library.editingId ? library.findSaved(library.editingId) : undefined,
 )
 
+// Draft state - applied to the store only when the user clicks Save.
+const nameDraft = ref('')
+const colorsDraft = ref<HexColor[]>([])
+
+watch(
+  () => library.editingId,
+  (id) => {
+    const p = id ? library.findSaved(id) : undefined
+    nameDraft.value = p?.name ?? ''
+    colorsDraft.value = p?.colors.slice() ?? []
+  },
+  { immediate: true },
+)
+
+const visible = computed({
+  get: () => library.editingId !== null,
+  set: (value) => {
+    if (!value) library.cancelEdit()
+  },
+})
+
 const slotPickerValues = computed(() =>
-  editor.slots.value.map((c) => c.replace('#', '')),
+  colorsDraft.value.map((c) => c.replace('#', '')),
 )
 
 function onSlotChange(index: number, raw: string | { hex?: string } | null) {
-  // PrimeVue ColorPicker emits the hex without '#', or sometimes an
-  // object depending on format. Normalize to the string form.
   const hex = typeof raw === 'string' ? raw : raw?.hex ?? ''
   if (!hex) return
-  editor.setSlot(index, `#${hex}`)
+  const next = colorsDraft.value.slice()
+  next[index] = normalizeHex(`#${hex}`)
+  colorsDraft.value = next
 }
 
-function loadPreset(p: Preset) {
-  editor.applyPreset(p)
+function onSave() {
+  if (!palette.value) return
+  // Fall back to existing name if the user cleared it.
+  const name = nameDraft.value.trim() || palette.value.name
+  library.saveEdit(name, colorsDraft.value)
+}
+
+function onCancel() {
+  library.cancelEdit()
 }
 </script>
 
 <template>
   <Dialog
-    :visible="visible"
-    @update:visible="emit('update:visible', $event)"
+    v-model:visible="visible"
     modal
-    header="Palette editor"
     :style="{ width: '480px' }"
   >
-    <section class="editor-section">
-      <h4>Slots</h4>
-      <div class="slot-row">
-        <div v-for="(c, i) in editor.slots.value" :key="i" class="slot">
-          <ColorPicker
-            :modelValue="slotPickerValues[i]"
-            @update:modelValue="onSlotChange(i, $event)"
-          />
-        </div>
-      </div>
-    </section>
+    <template #header>
+      <InputText
+        v-if="palette"
+        v-model="nameDraft"
+        class="name-input"
+      />
+      <span v-else>Palette editor</span>
+    </template>
 
-    <section class="editor-section">
-      <h4>Load preset</h4>
-      <div class="preset-row">
-        <Button
-          v-for="p in library.presets"
-          :key="p.id"
-          :label="p.name"
-          severity="secondary"
-          size="small"
-          @click="loadPreset(p)"
-        />
-      </div>
-    </section>
+    <div v-if="!palette" class="empty">Palette not found.</div>
+    <template v-else>
+      <section class="editor-section">
+        <h4>Slots</h4>
+        <div class="slot-row">
+          <div v-for="(c, i) in colorsDraft" :key="i" class="slot">
+            <ColorPicker
+              :modelValue="slotPickerValues[i]"
+              @update:modelValue="onSlotChange(i, $event)"
+            />
+          </div>
+        </div>
+      </section>
+    </template>
+
+    <template #footer>
+      <Button
+        label="Cancel"
+        severity="secondary"
+        text
+        @click="onCancel"
+      />
+      <Button
+        label="Save"
+        :disabled="!palette"
+        @click="onSave"
+      />
+    </template>
   </Dialog>
 </template>
 
 <style scoped>
+.name-input {
+  font-size: 1rem;
+  font-weight: 600;
+  min-width: 240px;
+}
 .editor-section {
   margin-bottom: 1rem;
 }
@@ -113,9 +129,8 @@ function loadPreset(p: Preset) {
 .slot {
   flex: 0 0 auto;
 }
-.preset-row {
-  display: flex;
-  gap: 0.5rem;
-  flex-wrap: wrap;
+.empty {
+  font-size: 0.85rem;
+  color: var(--p-text-muted-color);
 }
 </style>

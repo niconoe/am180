@@ -1,7 +1,8 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 import type { ParamSpec } from '@/types/schema'
 import { parsePaletteString, resizeColors } from '@/utils/palette'
+import { usePalettesLibrary } from '@/stores/palettesLibrary'
 import PalettePicker from './PalettePicker.vue'
 
 const props = defineProps<{
@@ -15,6 +16,17 @@ const emit = defineEmits<{
 
 const open = ref(false)
 const size = computed(() => props.spec.size ?? 5)
+
+// Reopen the picker whenever the editor closes (Save or Cancel). Assumes
+// a single PaletteField instance; with multiple fields, the signal would
+// need to carry the originating field id.
+const library = usePalettesLibrary()
+watch(
+  () => library.reopenPickerSignal,
+  () => {
+    open.value = true
+  },
+)
 const swatches = computed(() =>
   resizeColors(parsePaletteString(props.modelValue), size.value),
 )

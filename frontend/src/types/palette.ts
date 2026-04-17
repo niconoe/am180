@@ -16,18 +16,13 @@ export interface Preset {
   colors: HexColor[]
 }
 
-/** User-saved palette in the local library (phase 2). */
+/** User-saved palette in the local library, persisted to localStorage. */
 export interface SavedPalette {
   id: string
   name: string
   colors: HexColor[]
   createdAt: number
-}
-
-/** Recently-edited palette, in-memory only (cleared on reload). */
-export interface RecentPalette {
-  colors: HexColor[]
-  createdAt: number
+  updatedAt: number
 }
 
 /** Generation modes for the procedural generator (phase 3). */
