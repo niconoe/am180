@@ -51,6 +51,11 @@ const SEED_PRESETS: Preset[] = [
     name: 'Seventies',
     colors: ['#8a9a5b', '#c9a227', '#c67b48', '#8e5a3a', '#5b4636'],
   },
+  {
+    id: 'porcelain',
+    name: 'Porcelain',
+    colors: ['#c3d5d3', '#8fa8bd', '#5b7ea6', '#c94a44', '#2e3a55'],
+  },
 ]
 
 function loadSaved(): SavedPalette[] {

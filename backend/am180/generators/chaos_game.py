@@ -25,7 +25,7 @@ import numpy as np
 from PIL import Image
 from pydantic import BaseModel, Field
 
-from am180.rendering import hex_to_rgb
+from am180.rendering import apply_vignette_and_grain, hex_to_rgb, palette_gradient
 from am180.schemas import ParamSpec
 
 
@@ -301,27 +301,6 @@ def _accumulate_points(
     return np.concatenate(flat_chunks), np.concatenate(vid_chunks)
 
 
-def _palette_gradient(palette: np.ndarray, t: np.ndarray) -> np.ndarray:
-    """Interpolate colors along the palette treated as a gradient.
-
-    Parameters
-    ----------
-    palette : ndarray
-        Shape (k, 3), palette colors as floats 0-255.
-    t : ndarray
-        Values in [0, 1], any shape.
-
-    Returns
-    -------
-    ndarray
-        Interpolated colors, shape t.shape + (3,).
-    """
-    stops = np.linspace(0, 1, len(palette))
-    return np.stack(
-        [np.interp(t, stops, palette[:, c]) for c in range(3)], axis=-1
-    )
-
-
 def _compose_ink_layer(
     params: ChaosGameParams,
     flat: np.ndarray,
@@ -380,45 +359,11 @@ def _compose_ink_layer(
         safe_count = np.maximum(count, 1.0)[:, None]
         ink = rgb / safe_count
     else:
-        ink = _palette_gradient(palette, alpha).astype(np.float32)
+        ink = palette_gradient(palette, alpha).astype(np.float32)
 
     a = (alpha * params.ghost_opacity)[:, None].astype(np.float32)
     out = bg.astype(np.float32) * (1.0 - a) + ink * a
     return out.reshape(grid, grid, 3)
-
-
-def _apply_vignette_and_grain(
-    arr: np.ndarray, params: ChaosGameParams, rng: np.random.Generator
-) -> np.ndarray:
-    """Darken corners and add monochrome film grain.
-
-    Parameters
-    ----------
-    arr : ndarray
-        Shape (size, size, 3) float32 RGB image, modified and returned.
-    params : ChaosGameParams
-        Generator parameters (vignette, grain).
-    rng : Generator
-        Seeded numpy RNG (consumed only when grain > 0).
-
-    Returns
-    -------
-    ndarray
-        The adjusted image, same shape and dtype as arr.
-    """
-    size = arr.shape[0]
-    if params.vignette > 0:
-        # Radial falloff: 0 at center, 1 at the corners.
-        coords = np.linspace(-1.0, 1.0, size, dtype=np.float32)
-        r2 = (coords[None, :] ** 2 + coords[:, None] ** 2) / 2.0
-        fade = 1.0 - params.vignette * 0.7 * r2 ** 1.5
-        arr *= fade[:, :, None]
-
-    if params.grain > 0:
-        noise = rng.standard_normal((size, size), dtype=np.float32)
-        arr += (noise * params.grain * 80.0)[:, :, None]
-
-    return arr
 
 
 def render(params: ChaosGameParams, seed: int, size: int) -> Image.Image:
@@ -460,5 +405,5 @@ def render(params: ChaosGameParams, seed: int, size: int) -> Image.Image:
         img = img.resize((size, size), Image.Resampling.LANCZOS)
         arr = np.asarray(img, dtype=np.float32)
 
-    arr = _apply_vignette_and_grain(arr, params, rng)
+    arr = apply_vignette_and_grain(arr, params.vignette, params.grain, rng)
     return Image.fromarray(np.clip(arr, 0, 255).astype(np.uint8))

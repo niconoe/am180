@@ -10,7 +10,7 @@ from dataclasses import dataclass
 from PIL import Image
 from pydantic import BaseModel
 
-from am180.generators import chaos_game, flow_field, hello
+from am180.generators import chaos_game, colony, flow_field, growth, hello
 from am180.schemas import ParamSpec
 
 
@@ -43,6 +43,14 @@ class Generator:
 
 
 GENERATORS: dict[str, Generator] = {
+    "colony": Generator(
+        id="colony",
+        name="Colony",
+        description="Regular polygons budding smaller copies from their corners, like coral colonies",
+        params_model=colony.ColonyParams,
+        param_schema=colony.PARAM_SCHEMA,
+        render=colony.render,
+    ),
     "flow_field": Generator(
         id="flow_field",
         name="Flow Field",
@@ -58,6 +66,14 @@ GENERATORS: dict[str, Generator] = {
         params_model=chaos_game.ChaosGameParams,
         param_schema=chaos_game.PARAM_SCHEMA,
         render=chaos_game.render,
+    ),
+    "growth": Generator(
+        id="growth",
+        name="Growth",
+        description="Differential growth: coral-like rings of a buckling, self-avoiding curve",
+        params_model=growth.GrowthParams,
+        param_schema=growth.PARAM_SCHEMA,
+        render=growth.render,
     ),
     "hello": Generator(
         id="hello",
