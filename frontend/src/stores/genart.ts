@@ -85,9 +85,9 @@ export const useGenartStore = defineStore('genart', () => {
         randomized[spec.id] = `#${hex}`
       } else if (spec.type === 'palette') {
         const size = spec.size ?? 5
-        const presets = library.presets
-        if (presets.length > 0) {
-          const choice = presets[Math.floor(Math.random() * presets.length)]!
+        const pool = [...library.presets, ...library.saved]
+        if (pool.length > 0) {
+          const choice = pool[Math.floor(Math.random() * pool.length)]!
           randomized[spec.id] = formatPaletteString(resizeColors(choice.colors, size))
         }
       } else if (spec.default !== undefined) {

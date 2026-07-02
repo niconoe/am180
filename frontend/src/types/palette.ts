@@ -25,9 +25,26 @@ export interface SavedPalette {
   updatedAt: number
 }
 
-/** Generation modes for the procedural generator (phase 3). */
+/** Generation modes for the procedural palette generator. */
 export type GenerationMode =
+  | 'random'
   | 'monochromatic'
   | 'analogous'
   | 'complementary'
+  | 'split-complementary'
   | 'triadic'
+  | 'tetradic'
+  | 'muted'
+  | 'pastel'
+
+export const GENERATION_MODES: { value: GenerationMode; label: string }[] = [
+  { value: 'random', label: 'Random' },
+  { value: 'monochromatic', label: 'Monochromatic' },
+  { value: 'analogous', label: 'Analogous' },
+  { value: 'complementary', label: 'Complementary' },
+  { value: 'split-complementary', label: 'Split-complementary' },
+  { value: 'triadic', label: 'Triadic' },
+  { value: 'tetradic', label: 'Tetradic' },
+  { value: 'muted', label: 'Muted' },
+  { value: 'pastel', label: 'Pastel' },
+]

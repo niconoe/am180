@@ -26,6 +26,31 @@ const SEED_PRESETS: Preset[] = [
     name: 'Mono',
     colors: ['#ffffff', '#c0c0c0', '#808080', '#d0d0d0', '#e8e8e8'],
   },
+  {
+    id: 'sepia',
+    name: 'Sepia',
+    colors: ['#4a3728', '#7a5a3d', '#a4885e', '#c9b183', '#e3d3ab'],
+  },
+  {
+    id: 'postcard',
+    name: 'Faded Postcard',
+    colors: ['#5f8a8b', '#8fae9e', '#e0cda9', '#c97b63', '#b06a52'],
+  },
+  {
+    id: 'dusty-rose',
+    name: 'Dusty Rose',
+    colors: ['#8d5b67', '#b07d8a', '#cfa5ab', '#e6cdc8', '#66424e'],
+  },
+  {
+    id: 'washed-denim',
+    name: 'Washed Denim',
+    colors: ['#39506b', '#5f7d9c', '#93a8c1', '#c4b49a', '#8a6f4d'],
+  },
+  {
+    id: 'seventies',
+    name: 'Seventies',
+    colors: ['#8a9a5b', '#c9a227', '#c67b48', '#8e5a3a', '#5b4636'],
+  },
 ]
 
 function loadSaved(): SavedPalette[] {

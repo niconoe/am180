@@ -10,7 +10,7 @@ from dataclasses import dataclass
 from PIL import Image
 from pydantic import BaseModel
 
-from am180.generators import flow_field, hello
+from am180.generators import chaos_game, flow_field, hello
 from am180.schemas import ParamSpec
 
 
@@ -50,6 +50,14 @@ GENERATORS: dict[str, Generator] = {
         params_model=flow_field.FlowFieldParams,
         param_schema=flow_field.PARAM_SCHEMA,
         render=flow_field.render,
+    ),
+    "chaos_game": Generator(
+        id="chaos_game",
+        name="Chaos Game",
+        description="Ghostly generalized Sierpinski fractals as vintage ink-density fields",
+        params_model=chaos_game.ChaosGameParams,
+        param_schema=chaos_game.PARAM_SCHEMA,
+        render=chaos_game.render,
     ),
     "hello": Generator(
         id="hello",
