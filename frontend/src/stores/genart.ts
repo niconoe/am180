@@ -15,7 +15,11 @@ import {
   fetchRender,
 } from '@/api/client'
 import { usePalettesLibrary } from '@/stores/palettesLibrary'
-import { formatPaletteString, resizeColors } from '@/utils/palette'
+import {
+  formatPaletteString,
+  parsePaletteString,
+  resizeColors,
+} from '@/utils/palette'
 
 export const useGenartStore = defineStore('genart', () => {
   // --- State ---
@@ -26,6 +30,9 @@ export const useGenartStore = defineStore('genart', () => {
   const seed = ref(Math.floor(Math.random() * 2 ** 32))
   const previewUrl = ref<string | null>(null)
   const isRendering = ref(false)
+  // When true, "Randomize all" picks color params (the paper/background)
+  // from the palette it just chose instead of a fully random hex.
+  const paperFromPalette = ref(true)
 
   // Abort controller for in-flight preview requests
   let abortController: AbortController | null = null
@@ -74,22 +81,37 @@ export const useGenartStore = defineStore('genart', () => {
   function randomizeAll() {
     const library = usePalettesLibrary()
     const randomized: Record<string, number | string> = {}
+
+    // Palette params are resolved first so color params (the paper /
+    // background) can be drawn from the chosen palette, regardless of
+    // the order the schema lists them in.
     for (const spec of schema.value) {
-      if ((spec.type === 'float' || spec.type === 'int') && spec.min !== undefined && spec.max !== undefined) {
-        const val = spec.min + Math.random() * (spec.max - spec.min)
-        randomized[spec.id] = spec.type === 'int' ? Math.round(val) : val
-      } else if (spec.type === 'select' && spec.options && spec.options.length > 0) {
-        randomized[spec.id] = spec.options[Math.floor(Math.random() * spec.options.length)]!.value
-      } else if (spec.type === 'color') {
-        const hex = Math.floor(Math.random() * 0xffffff).toString(16).padStart(6, '0')
-        randomized[spec.id] = `#${hex}`
-      } else if (spec.type === 'palette') {
+      if (spec.type === 'palette') {
         const size = spec.size ?? 5
         const pool = [...library.presets, ...library.saved]
         if (pool.length > 0) {
           const choice = pool[Math.floor(Math.random() * pool.length)]!
           randomized[spec.id] = formatPaletteString(resizeColors(choice.colors, size))
         }
+      }
+    }
+    const paletteColors = paperFromPalette.value
+      ? Object.values(randomized).flatMap((v) => parsePaletteString(v as string))
+      : []
+
+    for (const spec of schema.value) {
+      if (spec.type === 'palette') {
+        continue
+      } else if ((spec.type === 'float' || spec.type === 'int') && spec.min !== undefined && spec.max !== undefined) {
+        const val = spec.min + Math.random() * (spec.max - spec.min)
+        randomized[spec.id] = spec.type === 'int' ? Math.round(val) : val
+      } else if (spec.type === 'select' && spec.options && spec.options.length > 0) {
+        randomized[spec.id] = spec.options[Math.floor(Math.random() * spec.options.length)]!.value
+      } else if (spec.type === 'color' && paletteColors.length > 0) {
+        randomized[spec.id] = paletteColors[Math.floor(Math.random() * paletteColors.length)]!
+      } else if (spec.type === 'color') {
+        const hex = Math.floor(Math.random() * 0xffffff).toString(16).padStart(6, '0')
+        randomized[spec.id] = `#${hex}`
       } else if (spec.default !== undefined) {
         randomized[spec.id] = spec.default
       }
@@ -173,6 +195,7 @@ export const useGenartStore = defineStore('genart', () => {
     seed,
     previewUrl,
     isRendering,
+    paperFromPalette,
     // Actions
     loadGenerators,
     selectGenerator,

@@ -2,6 +2,7 @@
 import { onMounted, watch } from 'vue'
 import { useGenartStore } from '@/stores/genart'
 import Button from 'primevue/button'
+import Checkbox from 'primevue/checkbox'
 import ConfirmDialog from 'primevue/confirmdialog'
 import GeneratorPicker from '@/components/GeneratorPicker.vue'
 import ParamForm from '@/components/ParamForm.vue'
@@ -51,6 +52,16 @@ watch(
         :modelValue="store.params"
         @update:modelValue="store.params = $event"
       />
+
+      <div class="randomize-option">
+        <Checkbox
+          v-model="store.paperFromPalette"
+          inputId="paper-from-palette"
+          binary
+          size="small"
+        />
+        <label for="paper-from-palette">Paper color from palette</label>
+      </div>
 
       <Button
         label="Randomize all"
@@ -110,6 +121,17 @@ html, body, #app {
   display: flex;
   flex-direction: column;
   gap: 1rem;
+}
+.randomize-option {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.875rem;
+  /* Pull the Randomize all button closer: this option belongs to it. */
+  margin-bottom: -0.5rem;
+}
+.randomize-option label {
+  cursor: pointer;
 }
 .app-title {
   font-size: 1.5rem;
